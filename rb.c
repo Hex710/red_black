@@ -184,10 +184,7 @@ void recolorir(struct rbno *n)
 {
     if (!n)
         return;
-    if (n->color == RED)
-        n->color = BLACK;
-    else
-        n->color == RED;
+    n->color = !(n->color);
 }
 
 struct rbno *rb_Insert(struct rbno *raiz, int chave)
@@ -198,7 +195,7 @@ struct rbno *rb_Insert(struct rbno *raiz, int chave)
         if (n->pai == n->pai->pai->esq)
         {
             tio = n->pai->pai->dir;
-            if (tio->color == RED)
+            if ((tio != NULL) && (tio->color == RED))
             {
                 recolorir(tio);
                 recolorir(n->pai);
@@ -207,44 +204,21 @@ struct rbno *rb_Insert(struct rbno *raiz, int chave)
             }
             else
             {
-                if (n == n->pai->dir)
+                if ((n != raiz) && (n == n->pai->dir))
                 {
-                    raiz = rot_Esq(raiz, n->pai);
-                    if (n == n->pai->dir)
-                    {
-                        raiz = rot_Esq(raiz, n->pai);
-                        recolorir(n);
-                        recolorir(n->esq);
-                        n = n->esq;
-                    }
-                    else
-                    {
-                        raiz = rot_Dir(raiz, n->pai);
-                        recolorir(n);
-                        recolorir(n->dir);
-                        n = n->dir;
-                    }
+                    n = n->pai;
+                    raiz = rot_Esq(raiz, n);
                 }
-                if (n->pai == n->pai->pai->dir)
-                {
-                    raiz = rot_Esq(raiz, n->pai->pai);
-                    recolorir(n->pai);
-                    recolorir(n->pai->esq);
-                    n = n->pai->esq;
-                }
-                else
-                {
-                    raiz = rot_Dir(raiz, n->pai->pai);
-                    recolorir(n->pai);
-                    recolorir(n->pai->dir);
-                    n = n->pai->dir;
-                }
+
+                n->pai->color = BLACK;
+                n->pai->pai->color = RED;
+                raiz = rot_Dir(raiz, n->pai->pai);
             }
         }
         else
         {
             tio = n->pai->pai->esq;
-            if (tio->color == RED)
+            if ((tio != NULL) && (tio->color == RED))
             {
                 recolorir(tio);
                 recolorir(n->pai);
@@ -253,36 +227,15 @@ struct rbno *rb_Insert(struct rbno *raiz, int chave)
             }
             else
             {
-                if (n == n->pai->esq)
+                if ((n != raiz) && (n == n->pai->esq))
                 {
-                    raiz = rot_Dir(raiz, n->pai);
-                    if (n == n->pai->esq)
-                    {
-                        raiz = rot_Dir(raiz, n->pai);
-                        recolorir(n);
-                        recolorir(n->dir);
-                        n = n->dir;
-                    }
-                    else
-                    {
-                        raiz = rot_Esq(raiz, n->pai);
-                        recolorir(n);
-                        recolorir(n->esq);
-                        n = n->esq;
-                    }
+                    n = n->pai;
+                    raiz = rot_Dir(raiz, n);
                 }
-                if (n->pai == n->pai->pai->esq)
-                {
-                    raiz = rot_Dir(raiz, n->pai->pai);
-                    recolorir(n->pai);
-                    recolorir(n->pai->dir);
-                }
-                else
-                {
-                    raiz = rot_Esq(raiz, n->pai->pai);
-                    recolorir(n->pai);
-                    recolorir(n->pai->esq);
-                }
+
+                n->pai->color = BLACK;
+                n->pai->pai->color = RED;
+                raiz = rot_Esq(raiz, n->pai->pai);
             }
         }
     }
@@ -298,64 +251,64 @@ struct rbno *rb_Delete_Fix(struct rbno *raiz, struct rbno *n)
     {
         if (n == n->pai->esq)
         {
-            irmao = n->pai->dir; // e se o irmao for nulo?
-            if (irmao != NULL)
+            irmao = n->pai->dir;
+            if ((irmao != NULL) && (irmao->color == RED))
             {
-                if (irmao->color == RED)
+                recolorir(irmao);
+                recolorir(n->pai);
+                raiz = rot_Esq(raiz, n->pai);
+                irmao = n->pai->dir;
+            }
+            if ((irmao != NULL) && (((irmao->esq == NULL) || (irmao->esq->color == BLACK)) && ((irmao->dir == NULL) || (irmao->dir->color == BLACK))))
+            {
+                irmao->color = RED;
+                n = n->pai;
+            }
+            else
+            {
+                if ((irmao != NULL) && ((irmao->dir == NULL) || (irmao->dir->color == BLACK)))
                 {
-                    raiz = rot_Esq(raiz, n->pai);
-                    recolorir(irmao);
-                    recolorir(irmao->esq); // checar se o n e o irmao mudam
+                    irmao->esq->color = BLACK;
+                    irmao->color = RED;
+                    raiz = rot_Dir(raiz, irmao);
+                    irmao = n->pai->dir;
                 }
-                if (((irmao->esq == NULL) || (irmao->esq->color == BLACK)) && ((irmao->dir == NULL) || (irmao->dir->color == BLACK)))
-                {
-                    raiz = tree_Remove(raiz, n);
-                    recolorir(irmao);
-                    recolorir(irmao->pai);
-                }
-                else
-                {
-                    if ((irmao->dir == NULL) || (irmao->dir->color == BLACK))
-                    {
-                        raiz = rot_Dir(raiz, irmao);
-                        recolorir(irmao);
-                        recolorir(irmao->pai);
-                    }
-                    raiz = tree_Remove(raiz, n);
-                    raiz = rot_Esq(raiz, n->pai);
-                    recolorir(irmao->dir);
-                }
+                irmao->color = n->pai->color;
+                n->pai->color = BLACK;
+                n->dir->color = BLACK;
+                raiz = rot_Esq(raiz, n->pai);
+                n = raiz;
             }
         }
         else if (n == n->pai->dir)
         {
             irmao = n->pai->esq;
-            if (irmao != NULL)
+            if ((irmao != NULL) && (irmao->color == RED))
             {
-                if (irmao->color == RED)
+                recolorir(irmao);
+                recolorir(n->pai);
+                raiz = rot_Dir(raiz, n->pai);
+                irmao = n->pai->esq;
+            }
+            if ((irmao != NULL) && (((irmao->esq == NULL) || (irmao->esq->color == BLACK)) && ((irmao->dir == NULL) || (irmao->dir->color == BLACK))))
+            {
+                irmao->color = RED;
+                n = n->pai;
+            }
+            else
+            {
+                if ((irmao != NULL) && ((irmao->esq == NULL) || (irmao->esq->color == BLACK)))
                 {
-                    raiz = rot_Dir(raiz, n->pai);
-                    recolorir(irmao);
-                    recolorir(n->pai); // checar se o n muda
+                    irmao->dir->color = BLACK;
+                    irmao->color = RED;
+                    raiz = rot_Esq(raiz, irmao);
+                    irmao = n->pai->esq;
                 }
-                if (((irmao->esq == NULL) || (irmao->esq->color == BLACK)) && ((irmao->dir == NULL) || (irmao->dir->color == BLACK)))
-                {
-                    raiz = tree_Remove(raiz, n);
-                    recolorir(irmao);
-                    recolorir(irmao->pai);
-                }
-                else
-                {
-                    if ((irmao->esq == NULL) || (irmao->esq->color == BLACK))
-                    {
-                        raiz = rot_Esq(raiz, irmao);
-                        recolorir(irmao);
-                        recolorir(irmao->pai);
-                    }
-                    raiz = tree_Remove(raiz, n);
-                    raiz = rot_Dir(raiz, n->pai);
-                    recolorir(irmao->dir);
-                }
+                irmao->color = n->pai->color;
+                n->pai->color = BLACK;
+                n->esq->color = BLACK;
+                raiz = rot_Dir(raiz, n->pai);
+                n = raiz;
             }
         }
     }
