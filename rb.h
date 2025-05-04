@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define BLACK 0
-#define RED 1
+#define BLACK 0 // no preto
+#define RED 1   // no vermelho
 
 struct rbno
 {
@@ -49,11 +49,11 @@ struct rbno *transplante(struct rbno *raiz, struct rbno *n, struct rbno *filho);
 // remove qualquer noh, seja ele folha, raiz ou intermediario
 struct rbno *tree_Remove(struct rbno *raiz, struct rbno *n);
 
-// inverte a cor do noh n
-void recolorir(struct rbno *n);
+// balanceia a arvore apos a insercao
+struct rbno *rb_Insert_Fix(struct rbno *raiz, struct rbno *n);
 
-// cria e insere um no com a chave dada em uma arvore rubro-negra, jah balanceando a arvore apos a insercao
-struct rbno *rb_Insert(struct rbno *raiz, int chave);
+// insere um no pre existente na arvore, retorna a raiz
+struct rbno *rb_Insert(struct rbno *raiz, struct rbno *n);
 
 // retira e deleta o noh n da arvore rubro-negra, balanceando a arvore apos a remocao
 struct rbno *rb_Delete_Fix(struct rbno *raiz, struct rbno *n);

@@ -1,16 +1,16 @@
 parametrosCompilacao=-Wall #-Wshadow
-nomePrograma=main
+nomePrograma=myrb
 
 all: $(nomePrograma)
 
-$(nomePrograma): main.o bst.o
-	gcc -o $(nomePrograma) main.o bst.o -lm $(parametrosCompilacao)
+$(nomePrograma): myrb.o rb.o
+	gcc -o $(nomePrograma) myrb.o rb.o -lm $(parametrosCompilacao)
 
-main.o: main.c
-	gcc -c main.c $(parametrosCompilacao)
+myrb.o: myrb.c
+	gcc -c myrb.c $(parametrosCompilacao)
 
-bst.o: bst.h bst.c
-	gcc -c bst.c $(parametrosCompilacao)
+rb.o: rb.h rb.c
+	gcc -c rb.c $(parametrosCompilacao)
 
 clean:
 	rm -f *.o *.gch $(nomePrograma)

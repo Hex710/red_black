@@ -41,7 +41,6 @@ struct rbno *binary(struct rbno *n, struct rbno *pai, int chave)
             pai->dir = n;
         else if (n->chave < pai->chave)
             pai->esq = n;
-
         return n;
     }
 
@@ -71,7 +70,7 @@ void printTree(struct rbno *raiz)
         return;
 
     printTree(raiz->esq);
-    printf("%d,%d,%d\n", raiz->chave, level(raiz), raiz->color);
+    fprintf(stderr, "%d,%d,%d\n", raiz->chave, level(raiz), raiz->color);
     printTree(raiz->dir);
 }
 
@@ -91,7 +90,7 @@ struct rbno *max_Tree(struct rbno *n)
 
 struct rbno *rot_Esq(struct rbno *raiz, struct rbno *n)
 {
-    if (!n)
+    if ((!raiz) || (!n))
         return NULL;
 
     struct rbno *aux = n->dir;
@@ -113,7 +112,7 @@ struct rbno *rot_Esq(struct rbno *raiz, struct rbno *n)
 
 struct rbno *rot_Dir(struct rbno *raiz, struct rbno *n)
 {
-    if (!n)
+    if ((!raiz) || (!n))
         return NULL;
 
     struct rbno *aux = n->esq;
@@ -159,87 +158,118 @@ struct rbno *transplante(struct rbno *raiz, struct rbno *n, struct rbno *filho)
 
 struct rbno *tree_Remove(struct rbno *raiz, struct rbno *n)
 {
-    struct rbno *ant;
+    struct rbno *prox;
+    int cor = n->color;
+
     if (n->esq == NULL)
         raiz = transplante(raiz, n, n->dir);
     else if (n->dir == NULL)
         raiz = transplante(raiz, n, n->esq);
     else
     {
-        ant = min_Tree(n->dir);
-        if (ant->pai != n)
+        prox = min_Tree(n->dir);
+        if (n->dir != prox)
         {
-            raiz = transplante(raiz, ant, ant->dir);
-            ant->dir = n->dir;
-            ant->dir->pai = ant;
+            raiz = transplante(raiz, prox, prox->dir);
+            prox->dir = n->dir;
+            prox->dir->pai = prox;
         }
-        raiz = transplante(raiz, n, ant);
-        ant->esq = n->esq;
-        ant->esq->pai = ant;
+        if ((cor == RED) && (prox->color == BLACK) && (prox->dir == NULL) && (prox->esq == NULL))
+            n->esq->color = RED;
+        else
+            cor = prox->color;
+        raiz = transplante(raiz, n, prox);
+        prox->esq = n->esq;
+        prox->esq->pai = prox;
     }
+    free(n);
+    if (cor == BLACK)
+        raiz = rb_Delete_Fix(raiz, prox);
     return raiz;
 }
 
-void recolorir(struct rbno *n)
+struct rbno *rb_Insert_Fix(struct rbno *raiz, struct rbno *n)
 {
-    if (!n)
-        return;
-    n->color = !(n->color);
-}
-
-struct rbno *rb_Insert(struct rbno *raiz, int chave)
-{
-    struct rbno *tio, *n = binary(raiz, NULL, chave);
-    while ((n != raiz) && (n->color == RED))
+    struct rbno *tio;
+    while ((n != raiz) && ((n != NULL) && (n->pai->color == RED)))
     {
-        if (n->pai == n->pai->pai->esq)
+        if (n->pai != raiz)
         {
-            tio = n->pai->pai->dir;
-            if ((tio != NULL) && (tio->color == RED))
+            if (n->pai == n->pai->pai->esq)
             {
-                recolorir(tio);
-                recolorir(n->pai);
-                recolorir(n->pai->pai);
-                n = n->pai->pai;
+                tio = n->pai->pai->dir;
+                if ((tio != NULL) && (tio->color == RED))
+                {
+                    tio->color = BLACK;
+                    n->pai->color = BLACK;
+                    n->pai->pai->color = RED;
+                    n = n->pai->pai;
+                }
+                else
+                {
+                    if (n == n->pai->dir)
+                    {
+                        n = n->pai;
+                        raiz = rot_Esq(raiz, n);
+                    }
+                    n->pai->color = BLACK;
+                    n->pai->pai->color = RED;
+                    n = n->pai->pai;
+                    raiz = rot_Dir(raiz, n);
+                }
             }
             else
             {
-                if ((n != raiz) && (n == n->pai->dir))
+                tio = n->pai->pai->esq;
+                if ((tio != NULL) && (tio->color = RED))
                 {
-                    n = n->pai;
+                    tio->color = BLACK;
+                    n->pai->color = BLACK;
+                    n->pai->pai->color = RED;
+                    n = n->pai->pai;
+                }
+                else
+                {
+                    if (n == n->pai->esq)
+                    {
+                        n = n->pai;
+                        raiz = rot_Dir(raiz, n);
+                    }
+                    n->pai->color = BLACK;
+                    n->pai->pai->color = RED;
+                    n = n->pai->pai;
                     raiz = rot_Esq(raiz, n);
                 }
-
-                n->pai->color = BLACK;
-                n->pai->pai->color = RED;
-                raiz = rot_Dir(raiz, n->pai->pai);
             }
         }
         else
-        {
-            tio = n->pai->pai->esq;
-            if ((tio != NULL) && (tio->color == RED))
-            {
-                recolorir(tio);
-                recolorir(n->pai);
-                recolorir(n->pai->pai);
-                n = n->pai->pai;
-            }
-            else
-            {
-                if ((n != raiz) && (n == n->pai->esq))
-                {
-                    n = n->pai;
-                    raiz = rot_Dir(raiz, n);
-                }
-
-                n->pai->color = BLACK;
-                n->pai->pai->color = RED;
-                raiz = rot_Esq(raiz, n->pai->pai);
-            }
-        }
+            n = n->pai;
     }
     raiz->color = BLACK;
+    return raiz;
+}
+
+struct rbno *rb_Insert(struct rbno *raiz, struct rbno *n)
+{
+    if ((!raiz) || (!n))
+        return n;
+    struct rbno *aux, *pai = NULL;
+    aux = raiz;
+    while (aux != NULL)
+    {
+        pai = aux;
+        if (n->chave > aux->chave)
+            aux = aux->dir;
+        else
+            aux = aux->esq;
+    }
+    n->pai = pai;
+    if (n->chave > pai->chave)
+        pai->dir = n;
+    else
+        pai->esq = n;
+    raiz = rb_Insert_Fix(raiz, n);
+    return raiz;
 }
 
 struct rbno *rb_Delete_Fix(struct rbno *raiz, struct rbno *n)
@@ -254,28 +284,37 @@ struct rbno *rb_Delete_Fix(struct rbno *raiz, struct rbno *n)
             irmao = n->pai->dir;
             if ((irmao != NULL) && (irmao->color == RED))
             {
-                recolorir(irmao);
-                recolorir(n->pai);
+                irmao->color = BLACK;
+                irmao->pai->color = RED;
                 raiz = rot_Esq(raiz, n->pai);
                 irmao = n->pai->dir;
             }
             if ((irmao != NULL) && (((irmao->esq == NULL) || (irmao->esq->color == BLACK)) && ((irmao->dir == NULL) || (irmao->dir->color == BLACK))))
             {
                 irmao->color = RED;
-                n = n->pai;
+                n = irmao->pai;
+                if (n != raiz)
+                {
+                    if (n == n->pai->dir)
+                        irmao = n->pai->esq;
+                    else
+                        irmao = n->pai->dir;
+                }
+                else
+                    irmao = NULL;
             }
             else
             {
                 if ((irmao != NULL) && ((irmao->dir == NULL) || (irmao->dir->color == BLACK)))
                 {
-                    irmao->esq->color = BLACK;
-                    irmao->color = RED;
+                    irmao->esq->color = RED;
+                    irmao->color = BLACK;
                     raiz = rot_Dir(raiz, irmao);
                     irmao = n->pai->dir;
                 }
                 irmao->color = n->pai->color;
                 n->pai->color = BLACK;
-                n->dir->color = BLACK;
+                irmao->dir->color = BLACK;
                 raiz = rot_Esq(raiz, n->pai);
                 n = raiz;
             }
@@ -285,8 +324,8 @@ struct rbno *rb_Delete_Fix(struct rbno *raiz, struct rbno *n)
             irmao = n->pai->esq;
             if ((irmao != NULL) && (irmao->color == RED))
             {
-                recolorir(irmao);
-                recolorir(n->pai);
+                irmao->color = BLACK;
+                n->pai->color = RED;
                 raiz = rot_Dir(raiz, n->pai);
                 irmao = n->pai->esq;
             }
@@ -294,6 +333,15 @@ struct rbno *rb_Delete_Fix(struct rbno *raiz, struct rbno *n)
             {
                 irmao->color = RED;
                 n = n->pai;
+                if (n != raiz)
+                {
+                    if (n == n->pai->dir)
+                        irmao = n->pai->esq;
+                    else
+                        irmao = n->pai->dir;
+                }
+                else
+                    irmao = NULL;
             }
             else
             {
@@ -306,11 +354,12 @@ struct rbno *rb_Delete_Fix(struct rbno *raiz, struct rbno *n)
                 }
                 irmao->color = n->pai->color;
                 n->pai->color = BLACK;
-                n->esq->color = BLACK;
+                irmao->esq->color = BLACK;
                 raiz = rot_Dir(raiz, n->pai);
                 n = raiz;
             }
         }
     }
-    n->color == BLACK;
+    n->color = BLACK;
+    return raiz;
 }
